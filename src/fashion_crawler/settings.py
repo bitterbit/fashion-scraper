@@ -24,7 +24,7 @@ CONCURRENT_REQUESTS = 1
 # Configure a delay for requests for the same website (default: 0)
 # See https://docs.scrapy.org/en/latest/topics/settings.html#download-delay
 # See also autothrottle settings and docs
-DOWNLOAD_DELAY = 1
+DOWNLOAD_DELAY = 3 
 # The download delay setting will honor only one of:
 #CONCURRENT_REQUESTS_PER_DOMAIN = 16
 #CONCURRENT_REQUESTS_PER_IP = 16
@@ -59,11 +59,18 @@ TELNETCONSOLE_ENABLED = False
 #    'scrapy.extensions.telnet.TelnetConsole': None,
 #}
 
-# Configure item pipelines
-# See https://docs.scrapy.org/en/latest/topics/item-pipeline.html
-#ITEM_PIPELINES = {
-#    'fashion_crawler.pipelines.FashionCrawlerPipeline': 300,
-#}
+"""
+Items go through from lower valued to higher valued classes. It’s customary to define these numbers in the 0-1000 range.
+"""
+ITEM_PIPELINES = {
+    'scrapy.pipelines.images.ImagesPipeline': 100,
+    # 'fashion_crawler.pipelines.AsosImageDownloader' : 100,
+}
+
+
+
+IMAGES_URLS_FIELD = 'img_urls'
+IMAGES_STORE = 'images'
 
 # Enable and configure the AutoThrottle extension (disabled by default)
 # See https://docs.scrapy.org/en/latest/topics/autothrottle.html

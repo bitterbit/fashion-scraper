@@ -24,18 +24,10 @@ class ASOSSpider(scrapy.Spider):
     def parse(self, response):
         for sel in response.xpath('//div[@data-auto-id="productList"]'):
            item = dict()
-           product_ids = sel.xpath('//article[@data-auto-id="productTile"]/../article/@id').extract()
-           product_ids = [product_id.strip() for product_id in product_ids]
-           product_urls = sel.xpath('//article[@data-auto-id="productTile"]/a/@href').extract()
-           product_urls = [product_url.strip() for product_url in product_urls]
-
            img_urls = sel.xpath('//article[@data-auto-id="productTile"]/a/div/img/@src').extract()
-           img_urls = [clean_asos_img_url(x) for x in img_urls]
-
-           result = zip(product_ids, img_urls)
-           for pid,imgurl in result:
-               item['pid'] = pid 
-               item['img'] = imgurl
+           for u in img_urls:
+               url = clean_asos_img_url(u)
+               item["img_urls"] = [url]
                yield item
 
         next_page = response.xpath('//*[@data-auto-id="loadMoreProducts"]/@href').extract()

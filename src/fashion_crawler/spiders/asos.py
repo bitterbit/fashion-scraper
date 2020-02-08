@@ -1,6 +1,14 @@
 import scrapy
 
 from urllib.parse import urljoin
+from furl import furl
+
+def clean_asos_img_url(url, scheme="http", width='1024'):
+    x = furl(url)
+    x.args['wid'] = width
+    x.scheme = scheme
+    del x.args['$n_480w$']
+    return str(x)
 
 class ASOSSpider(scrapy.Spider):
     name = "ASOS"
@@ -22,11 +30,12 @@ class ASOSSpider(scrapy.Spider):
            product_urls = [product_url.strip() for product_url in product_urls]
 
            img_urls = sel.xpath('//article[@data-auto-id="productTile"]/a/div/img/@src').extract()
+           img_urls = [clean_asos_img_url(x) for x in img_urls]
 
            result = zip(product_ids, img_urls)
-           for pid,img in result:
-               item['pid'] = name 
-               item['img'] = img 
+           for pid,imgurl in result:
+               item['pid'] = pid 
+               item['img'] = imgurl
                yield item
 
         next_page = response.xpath('//*[@data-auto-id="loadMoreProducts"]/@href').extract()

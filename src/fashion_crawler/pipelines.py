@@ -3,38 +3,18 @@ import os
 import scrapy
 import hashlib
 import logging
+from scrapy.pipelines.images import ImagesPipeline
 
-class AsosImageDownloader(object):
-    target_folder = "images"
-    def open_spider(self, spider):
-        if not os.path.exists(self.target_folder):
-            os.makedirs(self.target_folder)
-
-    def process_item(self, item, spider):
-        logging.info("preparing to download item %s", item)
-        request = scrapy.Request(item["img"])
-        downloader = spider.crawler.engine.download(request, spider)
-
-        # Add both adds 2 callbacks: A callback and an error callback
-        downloader.addCallback(self.handle_response)
-        downloader.callback(item)
-        return downloader
-
-    def handle_response(self, response, item):
-        img_id = hashlib.md5(item["img"].encode("utf8")).hexdigest()
-
-        logging.info("on download response status=%d product-id=%s %s", response.status, img_id, item)
-        if response.status != 200:
-            DropItem("Could'nt download image %s" % item)
-
-        name = img_id +".jpeg"
-        path = os.path.join(self.target_folder, name)
-        with open(path, "wb") as f:
-            f.write(response.body)
-
-        item["path"] = path
+class HumanImageFilterPipline(ImagesPipeline):
+    def item_completed(self, results, item, info):
+        for ok, image in results:
+            if not ok:
+                raise DropItem("not image")
+            if not self.is_human(image['path']):
+                raise DropItem("not human")
+        logging.debug("downloaded %s" % image['path'])
         return item
 
-class HumanImageFilterPipline(object):
-    def process_item(self, item, spider):
-        return item
+    def is_human(self, path):
+        print (path)
+        return True 

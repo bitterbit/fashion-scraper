@@ -63,7 +63,7 @@ TELNETCONSOLE_ENABLED = False
 Items go through from lower valued to higher valued classes. It’s customary to define these numbers in the 0-1000 range.
 """
 ITEM_PIPELINES = {
-    'scrapy.pipelines.images.ImagesPipeline': 100,
+    'fashion_crawler.pipelines.HumanImageFilterPipline': 100,
     # 'fashion_crawler.pipelines.AsosImageDownloader' : 100,
 }
 

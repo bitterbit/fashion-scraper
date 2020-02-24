@@ -7,6 +7,5 @@
 
 import scrapy
 
-
 class FashionCrawlerItem(scrapy.Item):
-    url = scrapy.Field()
+    img_urls = scrapy.Field()

@@ -23,24 +23,38 @@ main.py learn --positive-dir <path> --negative-dir <path> -o <output_path>
 main.py predict <path>
 """
 
+"""
+Layers:
+- MaxPool: Down Sampling
+- Dropout: randomise data against overfitting
+- Conv2D: Non-linear, scan the image for features **
+- Lienar: 
+"""
 
 class Net(nn.Module):
     def __init__(self):
         super(Net, self).__init__()
-        self.conv1 = nn.Conv2d(3, 6, 5)
-        self.pool = nn.MaxPool2d(2, 2)
-        self.conv2 = nn.Conv2d(6, 16, 5)
-        self.fc1 = nn.Linear(16 * 5 * 5, 120)
-        self.fc2 = nn.Linear(120, 84)
-        self.fc3 = nn.Linear(84, 10)
+        self.cnn_layers = nn.Sequential(
+                nn.Conv2d(3, 6, 5), # in_channels, out_channels, kernel_size
+                nn.ReLU(),
+                nn.MaxPool2d(2, 2),
+                nn.Conv2d(6, 16, 5),
+                nn.ReLU(),
+                nn.MaxPool2d(2, 2),
+        )
 
+        self.linear_layers = nn.Sequential(
+                nn.Linear(16 * 5 * 5, 120), # in_features, out_feautres
+                nn.ReLU(),
+                nn.Linear(120, 84),
+                nn.ReLU(),
+                nn.Linear(84, 24),
+        ) 
+        
     def forward(self, x):
-        x = self.pool(F.relu(self.conv1(x)))
-        x = self.pool(F.relu(self.conv2(x)))
+        x = self.cnn_layers(x)
         x = x.view(-1, 16 * 5 * 5)
-        x = F.relu(self.fc1(x))
-        x = F.relu(self.fc2(x))
-        x = self.fc3(x)
+        x = self.linear_layers(x)
         return x
 
 
@@ -68,12 +82,9 @@ def train(loader, net, criterion, optimizer):
         running_loss = 0.0
         for i, data in enumerate(loader, 0):
             inputs, labels = data
-            # inputs = [F.interpolate(x, size=32) for x in inputs]
-            print ("i", type(labels), type(inputs))
             optimizer.zero_grad()
             outputs = net(inputs)
 
-            # print(labels)
             loss = criterion(outputs, labels)
             loss.backward()
             optimizer.step()
@@ -84,6 +95,23 @@ def train(loader, net, criterion, optimizer):
                 running_loss = 0
 
     print("Finished trainning data")
+
+def get_accuracy(net, testloader):
+    correct = 0
+    total = 0
+    with torch.no_grad():
+        for data in testloader:
+            images, labels = data
+            outputs = net(images)
+            _, predicted = torch.max(outputs.data, 1)
+            total += labels.size(0)
+            #print ("expected", labels, "predicted", predicted)
+            correct += (predicted == labels).sum().item()
+
+
+        print('Accuracy of the network on the ... test images: %d %%' % (100 * correct / total))
+    return (100 * correct) / total
+ 
 
 
 def main():
@@ -96,12 +124,25 @@ def main():
 
     trainloader = torch.utils.data.DataLoader(trainset, batch_size=4, shuffle=True, num_workers=2)
     testloader = torch.utils.data.DataLoader(testset, batch_size=4, shuffle=False, num_workers=2)
-    
-    net = Net()
-    criterion = nn.CrossEntropyLoss()
-    optimizer = optim.SGD(net.parameters(), lr=0.001, momentum=0.9)
 
-    train(trainloader, net, criterion, optimizer) 
+
+    for i in range(10):
+        net = Net()
+        criterion = nn.CrossEntropyLoss()
+        optimizer = optim.SGD(net.parameters(), lr=0.001, momentum=0.9)
+
+        train(trainloader, net, criterion, optimizer) 
+        get_accuracy(net, testloader)
+
+        dataiter = iter(testloader)
+        images, labels = dataiter.next()
+        print('GroundTruth: ', ' '.join('%5s' % testset.classes[labels[j]] for j in range(4)))
+        outputs = net(images) #Predict!
+        _, predicted = torch.max(outputs.data, 1)
+        print([testset.classes[x] for x in predicted])
+        #imshow(torchvision.utils.make_grid(images))
+
+                                                               
 
 if __name__ == '__main__':
     main()

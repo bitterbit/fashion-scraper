@@ -16,6 +16,11 @@ import torch.optim as optim
 
 import random
 
+def get_transform():
+    return transforms.Compose(
+            [transforms.ToTensor(),
+             transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
+
 
 
 """
@@ -92,19 +97,6 @@ def imshow(img):
     plt.imshow(np.transpose(npimg, (1, 2, 0)))
     plt.show()
 
-def show_sample():
-    dataloader = get_data_loader()
-    # get some random training images
-    dataiter = iter(dataloader)
-    types, images = dataiter.next()
-
-    # show images
-    print(images)
-    imshow(torchvision.utils.make_grid(images))
-    # print labels
-    print(' '.join('%5s' % [x for x in types] ))
-
-
 def train(loader, net, criterion, optimizer):
     for epoch in range(5):
         running_loss = 0.0
@@ -147,10 +139,7 @@ def get_accuracy(net, testloader, classes):
 
 
 def main():
-    transform = transforms.Compose(
-        [transforms.ToTensor(),
-         transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
-
+    transform = get_transform()
     trainset = datasets.ImageFolder(root='traindata-small/train', transform=transform)  
     testset = datasets.ImageFolder(root='traindata-small/test', transform=transform)  
 
@@ -184,13 +173,20 @@ def main():
     #imshow(torchvision.utils.make_grid(images)) 
     """
 
-def classify(model_path, folder):
+def classify(model_path, data_dir):
     net = NetOne()
-    net.load_state_dict(torch.load(path))
+    net.load_state_dict(torch.load(model_path))
 
-    images = os.listdir(folder)
+    dataset = datasets.ImageFolder(data_dir, transform=get_transform())
+    trainloader = torch.utils.data.DataLoader(dataset, batch_size=10, shuffle=True, num_workers=1)
 
-    pass
+    with torch.no_grad():
+        images, _ = iter(trainloader).next()
+        outputs = net(images)
+        _, predicted = torch.max(outputs.data, 1)
+        print("predicted", predicted)
+        imshow(torchvision.utils.make_grid(images)) 
+
 
 if __name__ == '__main__':
     cmd = "train"

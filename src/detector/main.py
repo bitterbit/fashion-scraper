@@ -173,18 +173,32 @@ def main():
     #imshow(torchvision.utils.make_grid(images)) 
     """
 
-def classify(model_path, data_dir):
-    net = NetOne()
-    net.load_state_dict(torch.load(model_path))
+def classify(models, data_dir):
+    nets = []
+    for model in models:
+        net = NetOne()
+        net.load_state_dict(torch.load(model))
+        nets.append(net)
 
     dataset = datasets.ImageFolder(data_dir, transform=get_transform())
-    trainloader = torch.utils.data.DataLoader(dataset, batch_size=10, shuffle=True, num_workers=1)
+    trainloader = torch.utils.data.DataLoader(dataset, batch_size=8, shuffle=True, num_workers=1)
 
     with torch.no_grad():
         images, _ = iter(trainloader).next()
-        outputs = net(images)
-        _, predicted = torch.max(outputs.data, 1)
-        print("predicted", predicted)
+        combined = None
+        for i in range(len(nets)):
+            net = nets[i]
+            netname = models[i]
+            outputs = net(images)
+            _, predicted = torch.max(outputs.data, 1)
+            netname = netname + " "*(20 - len(netname))
+            print(netname, predicted)
+            if combined is None:
+                combined = predicted
+            else:
+                combined = np.add(combined, predicted)
+
+        print("predicted", combined)
         imshow(torchvision.utils.make_grid(images)) 
 
 
@@ -195,9 +209,9 @@ if __name__ == '__main__':
 
     if cmd == "train":
         main()
-    elif cmd == "classify" and len(sys.argv) > 2:
-        model_path = sys.argv[2]
-        folder = sys.argv[3]
-        classify(model_path, folder)
+    elif cmd == "classify" and len(sys.argv) >= 2:
+        models_path = ['net_2048', 'net_4377', 'net_4683', 'net_6038', 'net_6787','net_7676', 'net_832', 'net_9716', 'special/net_4377']
+        folder = sys.argv[2]
+        classify(models_path, folder)
     else:
         print("Unknown cmd", cmd)

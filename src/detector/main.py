@@ -93,9 +93,14 @@ class NetOne(nn.Module):
 
 def imshow(img):
     img = img / 2 + 0.5     # unnormalize
-    npimg = img.numpy()
+    npimg = img.numpy() 
     plt.imshow(np.transpose(npimg, (1, 2, 0)))
     plt.show()
+
+def imsave(path, img):
+    img = img / 2 + 0.5     # unnormalize
+    with open(path, "w") as f:
+        torchvision.utils.save_image(img, f)
 
 def train(loader, net, criterion, optimizer):
     for epoch in range(5):
@@ -163,16 +168,7 @@ def main():
             print("saving", path)
             torch.save(net.state_dict(), path)
 
-    """
-    dataiter = iter(testloader)
-    images, labels = dataiter.next()
-    print('GroundTruth: ', ' '.join('%5s' % testset.classes[labels[j]] for j in range(4)))
-    outputs = net(images) #Predict!
-    _, predicted = torch.max(outputs.data, 1)
-    print([testset.classes[x] for x in predicted])
-    #imshow(torchvision.utils.make_grid(images)) 
-    """
-
+    
 def classify(models, data_dir):
     nets = []
     for model in models:
@@ -181,25 +177,36 @@ def classify(models, data_dir):
         nets.append(net)
 
     dataset = datasets.ImageFolder(data_dir, transform=get_transform())
-    trainloader = torch.utils.data.DataLoader(dataset, batch_size=8, shuffle=True, num_workers=1)
+    loader = torch.utils.data.DataLoader(dataset, batch_size=8, shuffle=True, num_workers=1)
 
     with torch.no_grad():
-        images, _ = iter(trainloader).next()
-        combined = None
-        for i in range(len(nets)):
-            net = nets[i]
-            netname = models[i]
-            outputs = net(images)
-            _, predicted = torch.max(outputs.data, 1)
-            netname = netname + " "*(20 - len(netname))
-            print(netname, predicted)
-            if combined is None:
-                combined = predicted
-            else:
-                combined = np.add(combined, predicted)
+        for images, _ in loader:
+            combined = None
+            for i in range(len(nets)):
+                net = nets[i]
+                netname = models[i]
+                outputs = net(images)
+                _, predicted = torch.max(outputs.data, 1)
+                netname = netname + " "*(20 - len(netname))
+                print(netname, predicted)
+                if combined is None:
+                    combined = predicted
+                else:
+                    combined = np.add(combined, predicted)
 
-        print("predicted", combined)
-        imshow(torchvision.utils.make_grid(images)) 
+            positive = combined == len(nets) 
+            negative = combined < 3 
+            # imshow(torchvision.utils.make_grid(images)) 
+            for i in range(len(positive)):
+                if positive[i]:
+                    path = "out/positive/img{0}.jpg".format(str(random.randint(0, 10000)))
+                    imsave(path, images[i])
+
+            for i in range(len(negative)):
+                if negative[i]:
+                    path = "out/negative/img{0}.jpg".format(str(random.randint(0, 10000)))
+                    imsave(path, images[i])
+
 
 
 if __name__ == '__main__':

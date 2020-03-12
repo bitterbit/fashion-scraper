@@ -3,6 +3,8 @@ import numpy as np
 import os.path
 import sys
 
+SIZE = (244, 244)
+
 # fill image to be square
 def fill_to_square(inputImage, fill):
     height, width, depth = inputImage.shape
@@ -44,7 +46,7 @@ def fill_to_square(inputImage, fill):
 
 def main():
     if len(sys.argv) < 3:
-        print ("Usage:")
+        print ("Usage: <src> <dst>")
         return
 
     src = sys.argv[1]
@@ -60,7 +62,7 @@ def main():
         inputImage = cv2.imread(path, 1)
         if inputImage is not None:
             im = fill_to_square(inputImage, fill)
-            resized = cv2.resize(im, (32,32), interpolation = cv2.INTER_AREA)
+            resized = cv2.resize(im, SIZE, interpolation = cv2.INTER_AREA)
             cv2.imwrite(dst_path, resized)
 
 

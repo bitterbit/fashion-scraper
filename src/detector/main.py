@@ -8,6 +8,9 @@ import torchvision
 import numpy as np
 from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms, utils, datasets
+from torchsummary import summary
+from torchvision import models
+
 
 
 import torch.nn as nn
@@ -90,6 +93,32 @@ class NetOne(nn.Module):
         x = self.linear_layers(x)
         return x
 
+class NetTwo(nn.Module):
+    def __init__(self):
+        super(NetTwo, self).__init__()
+        self.cnn_layers = nn.Sequential(
+                nn.Conv2d(3,6,5), # 32->num_of_pixels
+                nn.ReLU(),
+
+                nn.MaxPool2d(2,2),
+                # channels_in, #channels_out, kernel
+                nn.Conv2d(3, 3, 64),
+                nn.ReLU(),
+
+                #nn.MaxPool2d(2,2),
+                #nn.Conv2d(3, 3, 64),
+                #nn.ReLU(),
+        )
+
+        self.linear_layers = nn.Sequential(
+            nn.Linear(3,1), # in_features, out_feautres
+        )
+                        
+    def forward(self, x):
+        x = self.cnn_layers(x)
+        x = x.view(x.size(0), -1)
+        x = self.linear_layers(x)
+        return x
 
 def imshow(img):
     img = img / 2 + 0.5     # unnormalize
@@ -145,29 +174,28 @@ def get_accuracy(net, testloader, classes):
 
 def main():
     transform = get_transform()
-    trainset = datasets.ImageFolder(root='traindata-small/train', transform=transform)  
-    testset = datasets.ImageFolder(root='traindata-small/test', transform=transform)  
+    trainset = datasets.ImageFolder(root='traindata-244/train', transform=transform)  
+    testset = datasets.ImageFolder(root='traindata-244/test', transform=transform)  
 
     trainloader = torch.utils.data.DataLoader(trainset, batch_size=4, shuffle=True, num_workers=2)
     testloader = torch.utils.data.DataLoader(testset, batch_size=1, shuffle=False, num_workers=2)
 
+    #net = Net()
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    net = models.vgg16(pretrained=False).to(device)
+    net.classifier[-1] = nn.Linear(in_features=4096, out_features=2)
 
-    while True:
-        net = NetOne()
-        criterion = nn.CrossEntropyLoss()
 
-        optimizer = optim.Adam(net.parameters(), lr=0.07)
-        #optimizer = optim.SGD(net.parameters(), lr=0.001, momentum=0.9)
+    summary(net, (3, 244, 244))
+    criterion = nn.CrossEntropyLoss()
 
-        train(trainloader, net, criterion, optimizer) 
-        get_accuracy(net, testloader, testset.classes)
+    optimizer = optim.Adam(net.parameters(), lr=0.07)
+    #optimizer = optim.SGD(net.parameters(), lr=0.001, momentum=0.9)
 
-        save = input("save? [y/N]") == "y"
-        if save:
-            path = 'net_'+str(random.randint(0, 10000))
-            print("saving", path)
-            torch.save(net.state_dict(), path)
+    train(trainloader, net, criterion, optimizer) 
+    get_accuracy(net, testloader, testset.classes)
 
+      
     
 def classify(models, data_dir):
     nets = []

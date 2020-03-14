@@ -6,3 +6,5 @@ RUN pip install furl pillow
 RUN pip install imutils
 RUN pip install tensorflow
 RUN pip install numpy 
+
+CMD ["scrapy", "crawl", "ASOS"]

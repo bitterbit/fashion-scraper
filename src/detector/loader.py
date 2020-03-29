@@ -10,6 +10,7 @@ class ImageLoader(object):
         self.PATH = PATH
         self.IMAGE_SIZE = IMAGE_SIZE
 
+        self.orignal_images = []
         self.image_data = []
         self.x_data = []
         self.y_data = []
@@ -70,8 +71,10 @@ class ImageLoader(object):
                 new_path = os.path.join(train_folder_path, img)                             # image Path
                 new_img = self.try_load_image(new_path)
                 if new_img is not None:
+                    self.orignal_images.append(new_img)
                     self.image_data.append([new_img, class_index])
 
+        np.random.shuffle(self.image_data)
         data = np.asanyarray(self.image_data)
 
         # Iterate over the Data
@@ -90,4 +93,3 @@ class ImageLoader(object):
     def load_dataset(self):
         X_Data,Y_Data = self.try_process_image()
         return X_Data,Y_Data
-
